@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeamLink - PC Client</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --primary-darker: #047857;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
+      max-width: 480px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark), var(--primary-darker));
+      padding: 28px 24px;
+      text-align: center;
+      color: white;
+    }
+    .header h1 { font-size: 24px; font-weight: 800; letter-spacing: 0.5px; }
+    .header p { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+    .header-icon {
+      width: 56px; height: 56px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 12px;
+    }
+    .body { padding: 24px; }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 15px;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+      background: #f8fafc;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(16,185,129,0.1);
+      background: white;
+    }
+    .form-group input.mono {
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      box-shadow: 0 8px 20px -4px rgba(16,185,129,0.4);
+    }
+    .btn-primary:hover { box-shadow: 0 12px 28px -4px rgba(16,185,129,0.5); }
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .btn-danger {
+      background: #fef2f2;
+      color: #ef4444;
+      border: 1px solid #fecaca;
+    }
+    .btn-danger:hover { background: #fee2e2; }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .status-bar.connected { background: #ecfdf5; color: #059669; }
+    .status-bar.disconnected { background: #f8fafc; color: #94a3b8; }
+    .status-bar.connecting { background: #fefce8; color: #ca8a04; }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .status-bar.connected .status-dot { background: #10b981; animation: pulse 2s infinite; }
+    .status-bar.disconnected .status-dot { background: #cbd5e1; }
+    .status-bar.connecting .status-dot { background: #eab308; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
+
+    .send-section { margin-top: 20px; }
+    .send-section h3 {
+      font-size: 13px; font-weight: 700; color: #475569;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .send-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .send-tab {
+      flex: 1;
+      padding: 10px 8px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .send-tab:hover { border-color: #cbd5e1; }
+    .send-tab.active {
+      border-color: var(--primary);
+      background: #ecfdf5;
+      color: var(--primary-dark);
+    }
+    .send-panel { display: none; }
+    .send-panel.active { display: block; }
+    .send-panel textarea {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      resize: none;
+      transition: all 0.2s;
+      background: #f8fafc;
+    }
+    .send-panel textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(16,185,129,0.1);
+      background: white;
+    }
+    .send-panel input[type="url"] {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: 'Inter', sans-serif;
+      transition: all 0.2s;
+      background: #f8fafc;
+    }
+    .send-panel input[type="url"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(16,185,129,0.1);
+      background: white;
+    }
+    .send-panel .btn { margin-top: 12px; }
+
+    .file-drop {
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 30px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #f8fafc;
+    }
+    .file-drop:hover { border-color: var(--primary); background: #ecfdf5; }
+    .file-drop.dragover { border-color: var(--primary); background: #d1fae5; }
+    .file-drop p { color: #94a3b8; font-size: 13px; margin-top: 8px; }
+    .file-drop svg { color: #cbd5e1; }
+    .file-drop:hover svg { color: var(--primary); }
+
+    .activity-log {
+      margin-top: 24px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .activity-log h3 {
+      font-size: 13px; font-weight: 700; color: #475569;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .log-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #f8fafc;
+      border-radius: 10px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .log-item .icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .log-item .icon.note { background: #dbeafe; color: #2563eb; }
+    .log-item .icon.file { background: #fef3c7; color: #d97706; }
+    .log-item .icon.link { background: #ede9fe; color: #7c3aed; }
+    .log-item .info { flex: 1; min-width: 0; }
+    .log-item .info p { font-weight: 500; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .log-item .info span { font-size: 11px; color: #94a3b8; }
+    .log-item .dir { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
+    .log-item .dir.sent { background: #ecfdf5; color: #059669; }
+    .log-item .dir.received { background: #eff6ff; color: #2563eb; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.3s ease;
+      font-family: 'Inter', sans-serif;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .toast.success { background: #059669; }
+    .toast.error { background: #dc2626; }
+    .toast.info { background: #2563eb; }
+
+    .chat-section { margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
+    .pc-chat-mine { text-align: right; margin-bottom: 6px; }
+    .pc-chat-peer { text-align: left; margin-bottom: 6px; }
+    .pc-chat-mine span { display: inline-block; background: #10b981; color: white; padding: 6px 12px; border-radius: 14px 14px 4px 14px; font-size: 13px; max-width: 75%; text-align: left; word-wrap: break-word; }
+    .pc-chat-peer span { display: inline-block; background: white; color: #334155; padding: 6px 12px; border-radius: 14px 14px 14px 4px; font-size: 13px; max-width: 75%; text-align: left; word-wrap: break-word; border: 1px solid #e2e8f0; }
+    .pc-chat-name { font-size: 10px; font-weight: 700; color: #10b981; margin-bottom: 2px; }
+    .pc-chat-time { font-size: 9px; opacity: 0.5; display: block; margin-top: 2px; }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 500px) {
+      body { padding: 0; }
+      .container { border-radius: 0; min-height: 100vh; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="header-icon">
+      <svg width="28" height="28" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+      </svg>
+    </div>
+    <h1>BeamLink</h1>
+    <p>Cliente PC - Conexion directa P2P</p>
+  </div>
+
+  <div class="body">
+    <div id="statusBar" class="status-bar disconnected">
+      <div class="status-dot"></div>
+      <span id="statusText">Desconectado</span>
+    </div>
+
+    <div id="connectForm">
+      <div class="form-group">
+        <label>Peer ID del celular</label>
+        <input type="text" id="inputPeerId" class="mono" placeholder="beaml-xxxxxx" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label>PIN de 4 digitos</label>
+        <input type="text" id="inputPin" class="mono" placeholder="1234" maxlength="4" autocomplete="off">
+      </div>
+      <button id="connectBtn" class="btn btn-primary">
+        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+        Conectar
+      </button>
+    </div>
+
+    <div id="connectedPanel" class="hidden">
+      <div class="chat-section">
+        <h3 style="font-size:13px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Chat en tiempo real</h3>
+        <div id="pcChatMessages" style="max-height:200px;overflow-y:auto;margin-bottom:10px;background:#f8fafc;border-radius:12px;padding:12px;min-height:60px"></div>
+        <div style="display:flex;gap:8px">
+          <input type="text" id="pcChatInput" placeholder="Mensaje..." style="flex:1;padding:10px 14px;border:2px solid #e2e8f0;border-radius:20px;font-size:14px;font-family:'Inter',sans-serif;background:#f8fafc">
+          <button id="pcChatSendBtn" style="width:42px;height:42px;border-radius:50%;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.2s">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="send-section">
+        <h3>Enviar al celular</h3>
+        <div class="send-tabs">
+          <button class="send-tab active" data-send="note">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            Nota
+          </button>
+          <button class="send-tab" data-send="file">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            Archivo
+          </button>
+          <button class="send-tab" data-send="link">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            Enlace
+          </button>
+        </div>
+
+        <div id="sendNote" class="send-panel active">
+          <textarea id="pcNoteContent" rows="3" placeholder="Escribe tu nota..."></textarea>
+          <button class="btn btn-primary" id="pcSendNoteBtn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            Enviar Nota
+          </button>
+        </div>
+
+        <div id="sendFile" class="send-panel">
+          <div class="file-drop" id="fileDrop">
+            <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            <p>Arrastra un archivo aqui o haz clic</p>
+            <input type="file" id="pcFileInput" style="display:none">
+          </div>
+          <p id="selectedFileName" class="hidden" style="text-align:center;font-size:13px;color:#475569;margin-top:8px;font-weight:500"></p>
+          <button class="btn btn-primary hidden" id="pcSendFileBtn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            Enviar Archivo
+          </button>
+        </div>
+
+        <div id="sendLink" class="send-panel">
+          <input type="url" id="pcLinkContent" placeholder="https://ejemplo.com">
+          <button class="btn btn-primary" id="pcSendLinkBtn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            Enviar Enlace
+          </button>
+        </div>
+      </div>
+
+      <div class="activity-log" id="activityLog">
+        <h3>Actividad</h3>
+        <div id="logItems"></div>
+      </div>
+
+      <button class="btn btn-danger" id="disconnectBtn" style="margin-top:20px">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+        Desconectar
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+(function() {
+  var peer = null;
+  var conn = null;
+  var selectedFile = null;
+
+  function $(id) { return document.getElementById(id); }
+
+  function showToast(msg, type) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + (type || 'info');
+    setTimeout(function() { t.classList.add('show'); }, 10);
+    setTimeout(function() { t.classList.remove('show'); }, 2500);
+  }
+
+  function setStatus(state, text) {
+    var bar = $('statusBar');
+    var txt = $('statusText');
+    bar.className = 'status-bar ' + state;
+    txt.textContent = text;
+  }
+
+  function addLogItem(type, text, direction) {
+    var log = $('logItems');
+    var icons = {
+      note: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
+      file: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>',
+      link: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>'
+    };
+    var shortText = text.length > 50 ? text.substring(0, 50) + '...' : text;
+    var html = '<div class="log-item">' +
+      '<div class="icon ' + type + '">' + icons[type] + '</div>' +
+      '<div class="info"><p>' + shortText + '</p><span>' + new Date().toLocaleTimeString('es') + '</span></div>' +
+      '<span class="dir ' + direction + '">' + (direction === 'sent' ? 'Enviado' : 'Recibido') + '</span>' +
+    '</div>';
+    log.insertAdjacentHTML('afterbegin', html);
+  }
+
+  function blobToBase64(blob) {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onloadend = function() { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  $('connectBtn').addEventListener('click', function() {
+    var targetId = $('inputPeerId').value.trim();
+    var pin = $('inputPin').value.trim();
+    if (!targetId || !pin) { showToast('Ingresa ID y PIN', 'error'); return; }
+    if (pin.length !== 4) { showToast('PIN debe ser 4 digitos', 'error'); return; }
+
+    setStatus('connecting', 'Conectando...');
+    this.disabled = true;
+
+    peer = new Peer({
+      host: '0.peerjs.com',
+      port: 443,
+      secure: true,
+      config: {
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      }
+    });
+
+    peer.on('open', function() {
+      conn = peer.connect(targetId, { reliable: true });
+      var authenticated = false;
+
+      conn.on('open', function() {
+        conn.on('data', function(data) {
+          if (!authenticated) {
+            if (data.type === 'auth_request') {
+              conn.send({ type: 'auth', pin: pin, info: { device: 'PC', platform: navigator.platform } });
+            } else if (data.type === 'auth_ok') {
+              authenticated = true;
+              setStatus('connected', 'Conectado a ' + targetId);
+              $('connectForm').classList.add('hidden');
+              $('connectedPanel').classList.remove('hidden');
+              showToast('Conectado exitosamente', 'success');
+            } else if (data.type === 'auth_fail') {
+              showToast('PIN incorrecto', 'error');
+              setStatus('disconnected', 'PIN incorrecto');
+              conn.close();
+              peer.destroy();
+              peer = null;
+              $('connectBtn').disabled = false;
+            }
+            return;
+          }
+
+          if (data.type === 'chat') {
+            addChatBubble(data.text, false, data.senderName);
+          } else if (data.type === 'note') {
+            addLogItem('note', data.content, 'received');
+            showToast('Nota recibida', 'info');
+          } else if (data.type === 'file') {
+            addLogItem('file', data.name + ' (' + formatSize(data.size) + ')', 'received');
+            showToast('Archivo recibido: ' + data.name, 'info');
+          } else if (data.type === 'link') {
+            addLogItem('link', data.url || data.content, 'received');
+            showToast('Enlace recibido', 'info');
+          }
+        });
+      });
+
+      conn.on('close', function() {
+        setStatus('disconnected', 'Desconectado');
+        $('connectForm').classList.remove('hidden');
+        $('connectedPanel').classList.add('hidden');
+        $('connectBtn').disabled = false;
+        showToast('Desconectado', 'error');
+      });
+
+      conn.on('error', function(err) {
+        showToast('Error de conexion', 'error');
+        setStatus('disconnected', 'Error');
+        $('connectBtn').disabled = false;
+        console.error(err);
+      });
+
+      setTimeout(function() {
+        if (!authenticated) {
+          setStatus('disconnected', 'Tiempo agotado');
+          showToast('No se pudo conectar', 'error');
+          $('connectBtn').disabled = false;
+          if (conn) conn.close();
+          if (peer) { peer.destroy(); peer = null; }
+        }
+      }, 15000);
+    });
+
+    peer.on('error', function(err) {
+      showToast('Error: ' + (err.message || err.type), 'error');
+      setStatus('disconnected', 'Error');
+      $('connectBtn').disabled = false;
+    });
+  });
+
+  document.querySelectorAll('.send-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.send-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.send-panel').forEach(function(p) { p.classList.remove('active'); });
+      tab.classList.add('active');
+      $('send' + tab.dataset.send.charAt(0).toUpperCase() + tab.dataset.send.slice(1)).classList.add('active');
+    });
+  });
+
+  $('pcSendNoteBtn').addEventListener('click', function() {
+    var content = $('pcNoteContent').value.trim();
+    if (!content) { showToast('Escribe algo', 'error'); return; }
+    if (!conn || !conn.open) { showToast('Sin conexion', 'error'); return; }
+    conn.send({ type: 'note', content: content, id: Date.now().toString(36), timestamp: Date.now() });
+    addLogItem('note', content, 'sent');
+    $('pcNoteContent').value = '';
+    showToast('Nota enviada', 'success');
+  });
+
+  $('pcSendLinkBtn').addEventListener('click', function() {
+    var url = $('pcLinkContent').value.trim();
+    if (!url) { showToast('Ingresa un enlace', 'error'); return; }
+    if (!conn || !conn.open) { showToast('Sin conexion', 'error'); return; }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    conn.send({ type: 'link', url: url, content: url, id: Date.now().toString(36), timestamp: Date.now() });
+    addLogItem('link', url, 'sent');
+    $('pcLinkContent').value = '';
+    showToast('Enlace enviado', 'success');
+  });
+
+  var fileDrop = $('fileDrop');
+  fileDrop.addEventListener('click', function() { $('pcFileInput').click(); });
+  fileDrop.addEventListener('dragover', function(e) { e.preventDefault(); fileDrop.classList.add('dragover'); });
+  fileDrop.addEventListener('dragleave', function() { fileDrop.classList.remove('dragover'); });
+  fileDrop.addEventListener('drop', function(e) {
+    e.preventDefault();
+    fileDrop.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  $('pcFileInput').addEventListener('change', function(e) { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+  function handleFile(file) {
+    selectedFile = file;
+    $('selectedFileName').textContent = file.name + ' (' + formatSize(file.size) + ')';
+    $('selectedFileName').classList.remove('hidden');
+    $('pcSendFileBtn').classList.remove('hidden');
+  }
+
+  $('pcSendFileBtn').addEventListener('click', function() {
+    if (!selectedFile || !conn || !conn.open) { showToast('Sin archivo o conexion', 'error'); return; }
+    showToast('Enviando archivo...', 'info');
+    blobToBase64(selectedFile).then(function(b64) {
+      conn.send({
+        type: 'file',
+        name: selectedFile.name,
+        size: selectedFile.size,
+        mimeType: selectedFile.type,
+        data: b64,
+        id: Date.now().toString(36),
+        timestamp: Date.now()
+      });
+      addLogItem('file', selectedFile.name, 'sent');
+      showToast('Archivo enviado', 'success');
+      selectedFile = null;
+      $('selectedFileName').classList.add('hidden');
+      $('pcSendFileBtn').classList.add('hidden');
+      $('pcFileInput').value = '';
+    });
+  });
+
+  $('disconnectBtn').addEventListener('click', function() {
+    if (conn) conn.close();
+    if (peer) { peer.destroy(); peer = null; }
+    conn = null;
+    setStatus('disconnected', 'Desconectado');
+    $('connectForm').classList.remove('hidden');
+    $('connectedPanel').classList.add('hidden');
+    $('connectBtn').disabled = false;
+  });
+
+  function formatSize(bytes) {
+    if (bytes === 0) return '0 B';
+    var sizes = ['B', 'KB', 'MB', 'GB'];
+    var i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+  }
+
+  function addChatBubble(text, isMine, senderName) {
+    var chat = $('pcChatMessages');
+    var time = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+    var cls = isMine ? 'pc-chat-mine' : 'pc-chat-peer';
+    var nameHtml = (!isMine && senderName) ? '<div class="pc-chat-name">' + escapeHtml(senderName) + '</div>' : '';
+    var html = '<div class="' + cls + '">' + nameHtml + '<span>' + escapeHtml(text) + '<span class="pc-chat-time">' + time + '</span></span></div>';
+    chat.insertAdjacentHTML('beforeend', html);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+  }
+
+  $('pcChatSendBtn').addEventListener('click', function() { sendChat(); });
+  $('pcChatInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') sendChat(); });
+
+  function sendChat() {
+    var input = $('pcChatInput');
+    var text = input.value.trim();
+    if (!text || !conn || !conn.open) return;
+    conn.send({ type: 'chat', text: text, senderName: 'PC', id: Date.now().toString(36), timestamp: Date.now() });
+    addChatBubble(text, true);
+    input.value = '';
+  }
+})();
+</script>
+</body>
+</html>
