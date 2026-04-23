@@ -227,41 +227,42 @@
     .file-drop svg { color: #cbd5e1; }
     .file-drop:hover svg { color: var(--primary); }
 
-    .activity-log {
-      margin-top: 24px;
-      max-height: 200px;
-      overflow-y: auto;
+    .activity-section { margin-top: 20px; }
+    .activity-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+    .activity-tab {
+      flex: 1; padding: 10px 8px; border: 2px solid #e2e8f0; border-radius: 12px; background: white;
+      cursor: pointer; font-size: 12px; font-weight: 700; font-family: 'Inter', sans-serif; color: #64748b;
+      display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.2s;
     }
-    .activity-log h3 {
-      font-size: 13px; font-weight: 700; color: #475569;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
+    .activity-tab:hover { border-color: #cbd5e1; }
+    .activity-tab.active { border-color: var(--primary); background: #ecfdf5; color: var(--primary-dark); }
+    .activity-panel { display: none; max-height: 300px; overflow-y: auto; }
+    .activity-panel.active { display: block; }
+    .act-empty { text-align: center; padding: 20px; color: #94a3b8; font-size: 13px; }
+    .act-item {
+      display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+      background: #f8fafc; border-radius: 12px; margin-bottom: 8px; transition: background 0.2s;
     }
-    .log-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      background: #f8fafc;
-      border-radius: 10px;
-      margin-bottom: 6px;
-      font-size: 13px;
+    .act-item:hover { background: #f1f5f9; }
+    .act-icon {
+      width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .log-item .icon {
-      width: 32px; height: 32px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
+    .act-icon.note { background: #dbeafe; color: #2563eb; }
+    .act-icon.file { background: #fef3c7; color: #d97706; }
+    .act-icon.link { background: #ede9fe; color: #7c3aed; }
+    .act-icon.img { background: #fce7f3; color: #ec4899; }
+    .act-body { flex: 1; min-width: 0; }
+    .act-body p { font-size: 13px; font-weight: 500; color: #334155; margin-bottom: 2px; word-wrap: break-word; }
+    .act-body span { font-size: 11px; color: #94a3b8; }
+    .act-img { width: 100%; max-height: 120px; object-fit: cover; border-radius: 8px; margin-top: 6px; cursor: pointer; }
+    .act-download {
+      padding: 4px 10px; font-size: 11px; font-weight: 700; font-family: 'Inter', sans-serif;
+      background: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; border-radius: 8px;
+      cursor: pointer; transition: all 0.2s; margin-top: 6px; display: inline-block;
     }
-    .log-item .icon.note { background: #dbeafe; color: #2563eb; }
-    .log-item .icon.file { background: #fef3c7; color: #d97706; }
-    .log-item .icon.link { background: #ede9fe; color: #7c3aed; }
-    .log-item .info { flex: 1; min-width: 0; }
-    .log-item .info p { font-weight: 500; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .log-item .info span { font-size: 11px; color: #94a3b8; }
-    .log-item .dir { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; }
-    .log-item .dir.sent { background: #ecfdf5; color: #059669; }
-    .log-item .dir.received { background: #eff6ff; color: #2563eb; }
+    .act-download:hover { background: #d1fae5; }
+
+    .hidden { display: none !important; }
 
     .toast {
       position: fixed;
@@ -290,8 +291,6 @@
     .pc-chat-peer span { display: inline-block; background: white; color: #334155; padding: 6px 12px; border-radius: 14px 14px 14px 4px; font-size: 13px; max-width: 75%; text-align: left; word-wrap: break-word; border: 1px solid #e2e8f0; }
     .pc-chat-name { font-size: 10px; font-weight: 700; color: #10b981; margin-bottom: 2px; }
     .pc-chat-time { font-size: 9px; opacity: 0.5; display: block; margin-top: 2px; }
-
-    .hidden { display: none !important; }
 
     @media (max-width: 500px) {
       body { padding: 0; }
@@ -393,9 +392,24 @@
         </div>
       </div>
 
-      <div class="activity-log" id="activityLog">
-        <h3>Actividad</h3>
-        <div id="logItems"></div>
+      <div class="activity-section" id="activitySection">
+        <h3 style="font-size:13px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">Actividad</h3>
+        <div class="activity-tabs">
+          <button class="activity-tab active" data-panel="sent">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            Enviados
+          </button>
+          <button class="activity-tab" data-panel="received">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            Recibidos
+          </button>
+        </div>
+        <div id="panelSent" class="activity-panel active">
+          <div id="sentItems"><div class="act-empty">Nada enviado aun</div></div>
+        </div>
+        <div id="panelReceived" class="activity-panel">
+          <div id="receivedItems"><div class="act-empty">Nada recibido aun</div></div>
+        </div>
       </div>
 
       <button class="btn btn-danger" id="disconnectBtn" style="margin-top:20px">
@@ -432,21 +446,63 @@
     txt.textContent = text;
   }
 
-  function addLogItem(type, text, direction) {
-    var log = $('logItems');
-    var icons = {
-      note: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
-      file: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>',
-      link: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>'
-    };
-    var shortText = text.length > 50 ? text.substring(0, 50) + '...' : text;
-    var html = '<div class="log-item">' +
-      '<div class="icon ' + type + '">' + icons[type] + '</div>' +
-      '<div class="info"><p>' + shortText + '</p><span>' + new Date().toLocaleTimeString('es') + '</span></div>' +
-      '<span class="dir ' + direction + '">' + (direction === 'sent' ? 'Enviado' : 'Recibido') + '</span>' +
-    '</div>';
-    log.insertAdjacentHTML('afterbegin', html);
+  var actIcons = {
+    note: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>',
+    file: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>',
+    link: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>',
+    img: '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>'
+  };
+
+  function clearEmpty(container) {
+    var empty = container.querySelector('.act-empty');
+    if (empty) empty.remove();
   }
+
+  function addActItem(type, text, direction, extra) {
+    var containerId = direction === 'sent' ? 'sentItems' : 'receivedItems';
+    var container = $(containerId);
+    clearEmpty(container);
+    var isImg = type === 'img' || (extra && extra.mimeType && extra.mimeType.startsWith('image/'));
+    var iconType = isImg ? 'img' : type;
+    var shortText = text.length > 60 ? text.substring(0, 60) + '...' : text;
+    var time = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+    var html = '<div class="act-item">' +
+      '<div class="act-icon ' + iconType + '">' + actIcons[iconType] + '</div>' +
+      '<div class="act-body"><p>' + escapeHtml(shortText) + '</p><span>' + time + '</span>';
+    if (isImg && extra && extra.data) {
+      html += '<img class="act-img" src="' + extra.data + '" onclick="window._openImg(this.src)">';
+    }
+    if (direction === 'received' && extra && extra.data && extra.name) {
+      html += '<button class="act-download" onclick="window._downloadFile(\'' + containerId + '\',this.dataset.idx)" data-idx="' + receivedFiles.length + '">Descargar</button>';
+      receivedFiles.push({ name: extra.name, data: extra.data, mimeType: extra.mimeType || 'application/octet-stream' });
+    }
+    html += '</div></div>';
+    container.insertAdjacentHTML('afterbegin', html);
+  }
+
+  var receivedFiles = [];
+
+  window._downloadFile = function(containerId, idx) {
+    var f = receivedFiles[idx];
+    if (!f) return;
+    var a = document.createElement('a');
+    a.href = f.data;
+    a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  window._openImg = function(src) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;cursor:pointer';
+    var img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'max-width:90%;max-height:90%;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5)';
+    overlay.appendChild(img);
+    overlay.onclick = function() { document.body.removeChild(overlay); };
+    document.body.appendChild(overlay);
+  };
 
   function blobToBase64(blob) {
     return new Promise(function(resolve, reject) {
@@ -507,13 +563,14 @@
           if (data.type === 'chat') {
             addChatBubble(data.text, false, data.senderName);
           } else if (data.type === 'note') {
-            addLogItem('note', data.content, 'received');
+            addActItem('note', data.content, 'received');
             showToast('Nota recibida', 'info');
           } else if (data.type === 'file') {
-            addLogItem('file', data.name + ' (' + formatSize(data.size) + ')', 'received');
+            var isImgFile = data.mimeType && data.mimeType.startsWith('image/');
+            addActItem(isImgFile ? 'img' : 'file', data.name + ' (' + formatSize(data.size) + ')', 'received', { name: data.name, data: data.data, mimeType: data.mimeType });
             showToast('Archivo recibido: ' + data.name, 'info');
           } else if (data.type === 'link') {
-            addLogItem('link', data.url || data.content, 'received');
+            addActItem('link', data.url || data.content, 'received');
             showToast('Enlace recibido', 'info');
           }
         });
@@ -561,12 +618,21 @@
     });
   });
 
+  document.querySelectorAll('.activity-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.activity-tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.activity-panel').forEach(function(p) { p.classList.remove('active'); });
+      tab.classList.add('active');
+      $('panel' + tab.dataset.panel.charAt(0).toUpperCase() + tab.dataset.panel.slice(1)).classList.add('active');
+    });
+  });
+
   $('pcSendNoteBtn').addEventListener('click', function() {
     var content = $('pcNoteContent').value.trim();
     if (!content) { showToast('Escribe algo', 'error'); return; }
     if (!conn || !conn.open) { showToast('Sin conexion', 'error'); return; }
     conn.send({ type: 'note', content: content, id: Date.now().toString(36), timestamp: Date.now() });
-    addLogItem('note', content, 'sent');
+    addActItem('note', content, 'sent');
     $('pcNoteContent').value = '';
     showToast('Nota enviada', 'success');
   });
@@ -577,7 +643,7 @@
     if (!conn || !conn.open) { showToast('Sin conexion', 'error'); return; }
     if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
     conn.send({ type: 'link', url: url, content: url, id: Date.now().toString(36), timestamp: Date.now() });
-    addLogItem('link', url, 'sent');
+    addActItem('link', url, 'sent');
     $('pcLinkContent').value = '';
     showToast('Enlace enviado', 'success');
   });
@@ -613,7 +679,8 @@
         id: Date.now().toString(36),
         timestamp: Date.now()
       });
-      addLogItem('file', selectedFile.name, 'sent');
+      var isImgSend = selectedFile.type && selectedFile.type.startsWith('image/');
+      addActItem(isImgSend ? 'img' : 'file', selectedFile.name + ' (' + formatSize(selectedFile.size) + ')', 'sent', { name: selectedFile.name, data: isImgSend ? b64 : null, mimeType: selectedFile.type });
       showToast('Archivo enviado', 'success');
       selectedFile = null;
       $('selectedFileName').classList.add('hidden');
