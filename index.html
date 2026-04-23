@@ -334,6 +334,16 @@
     </div>
 
     <div id="connectedPanel" class="hidden">
+      <div id="pcProgress" class="hidden" style="margin-bottom:16px;padding:12px 16px;background:#f0fdf4;border-radius:14px;border:1px solid #a7f3d0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span id="pcProgressLabel" style="font-size:12px;font-weight:600;color:#059669">Enviando...</span>
+          <span id="pcProgressPct" style="font-size:12px;font-weight:700;color:#047857">0%</span>
+        </div>
+        <div style="background:#d1fae5;border-radius:8px;height:8px;overflow:hidden">
+          <div id="pcProgressBar" style="height:100%;background:linear-gradient(90deg,#10b981,#059669);border-radius:8px;width:0%;transition:width 0.3s"></div>
+        </div>
+      </div>
+
       <div class="chat-section">
         <h3 style="font-size:13px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px">Chat en tiempo real</h3>
         <div id="pcChatMessages" style="max-height:200px;overflow-y:auto;margin-bottom:10px;background:#f8fafc;border-radius:12px;padding:12px;min-height:60px"></div>
@@ -482,6 +492,46 @@
 
   var receivedFiles = [];
 
+  var _chunkBuffers = {};
+
+  function _handleChunkStart(data) {
+    _chunkBuffers[data.transferId] = { chunks: [], received: 0, total: data.totalChunks, meta: data.meta };
+    showProgress('Recibiendo ' + (data.meta.name || 'archivo'), 0);
+  }
+
+  function _handleChunk(data) {
+    var buf = _chunkBuffers[data.transferId];
+    if (!buf) return;
+    buf.chunks[data.index] = data.chunk;
+    buf.received++;
+    var pct = Math.round((buf.received / buf.total) * 100);
+    showProgress(null, pct);
+    if (buf.received >= buf.total) {
+      hideProgress();
+      var assembled = {
+        type: 'file', name: buf.meta.name, size: buf.meta.size,
+        mimeType: buf.meta.mimeType, data: buf.chunks.join(''),
+        timestamp: Date.now(), id: data.transferId
+      };
+      delete _chunkBuffers[data.transferId];
+      var isImgFile = assembled.mimeType && assembled.mimeType.startsWith('image/');
+      addActItem(isImgFile ? 'img' : 'file', assembled.name + ' (' + formatSize(assembled.size) + ')', 'received', { name: assembled.name, data: assembled.data, mimeType: assembled.mimeType });
+      showToast('Archivo recibido: ' + assembled.name, 'info');
+    }
+  }
+
+  function showProgress(label, pct) {
+    var wrap = $('pcProgress');
+    wrap.classList.remove('hidden');
+    if (label !== null && label !== undefined) $('pcProgressLabel').textContent = label;
+    $('pcProgressPct').textContent = pct + '%';
+    $('pcProgressBar').style.width = pct + '%';
+  }
+
+  function hideProgress() {
+    setTimeout(function() { $('pcProgress').classList.add('hidden'); }, 800);
+  }
+
   window._downloadFile = function(containerId, idx) {
     var f = receivedFiles[idx];
     if (!f) return;
@@ -562,6 +612,10 @@
 
           if (data.type === 'chat') {
             addChatBubble(data.text, false, data.senderName);
+          } else if (data.type === 'file_start') {
+            _handleChunkStart(data);
+          } else if (data.type === 'file_chunk_transfer') {
+            _handleChunk(data);
           } else if (data.type === 'note') {
             addActItem('note', data.content, 'received');
             showToast('Nota recibida', 'info');
@@ -668,24 +722,33 @@
 
   $('pcSendFileBtn').addEventListener('click', function() {
     if (!selectedFile || !conn || !conn.open) { showToast('Sin archivo o conexion', 'error'); return; }
-    showToast('Enviando archivo...', 'info');
+    var CHUNK = 64000;
     blobToBase64(selectedFile).then(function(b64) {
-      conn.send({
-        type: 'file',
-        name: selectedFile.name,
-        size: selectedFile.size,
-        mimeType: selectedFile.type,
-        data: b64,
-        id: Date.now().toString(36),
-        timestamp: Date.now()
-      });
-      var isImgSend = selectedFile.type && selectedFile.type.startsWith('image/');
-      addActItem(isImgSend ? 'img' : 'file', selectedFile.name + ' (' + formatSize(selectedFile.size) + ')', 'sent', { name: selectedFile.name, data: isImgSend ? b64 : null, mimeType: selectedFile.type });
-      showToast('Archivo enviado', 'success');
-      selectedFile = null;
-      $('selectedFileName').classList.add('hidden');
-      $('pcSendFileBtn').classList.add('hidden');
-      $('pcFileInput').value = '';
+      var transferId = Date.now().toString(36);
+      var totalChunks = Math.ceil(b64.length / CHUNK);
+      var meta = { name: selectedFile.name, size: selectedFile.size, mimeType: selectedFile.type };
+      conn.send({ type: 'file_start', transferId: transferId, meta: meta, totalChunks: totalChunks });
+      showProgress('Enviando ' + selectedFile.name, 0);
+      var sentCount = 0;
+      function sendNext() {
+        if (sentCount >= totalChunks) {
+          hideProgress();
+          var isImgSend = selectedFile.type && selectedFile.type.startsWith('image/');
+          addActItem(isImgSend ? 'img' : 'file', selectedFile.name + ' (' + formatSize(selectedFile.size) + ')', 'sent', { name: selectedFile.name, data: isImgSend ? b64 : null, mimeType: selectedFile.type });
+          showToast('Archivo enviado', 'success');
+          selectedFile = null;
+          $('selectedFileName').classList.add('hidden');
+          $('pcSendFileBtn').classList.add('hidden');
+          $('pcFileInput').value = '';
+          return;
+        }
+        var chunk = b64.substring(sentCount * CHUNK, (sentCount + 1) * CHUNK);
+        conn.send({ type: 'file_chunk_transfer', transferId: transferId, index: sentCount, chunk: chunk, totalChunks: totalChunks, meta: meta });
+        sentCount++;
+        showProgress(null, Math.round((sentCount / totalChunks) * 100));
+        setTimeout(sendNext, 20);
+      }
+      sendNext();
     });
   });
 
